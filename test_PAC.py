@@ -1,6 +1,8 @@
+import time
 import numpy as np
 from myML.PCA import PCA
 import matplotlib.pyplot as plt
+from sklearn import datasets
 
 
 def demean(X):
@@ -108,5 +110,58 @@ def test_my_pca():
     plt.scatter(X_reverse[:, 0], X_reverse[:,1])
     plt.show()
 
+def test_sklearn_pca():
+    from sklearn.decomposition import PCA
+    from sklearn.model_selection import train_test_split
+    digits = datasets.load_digits()
+    X = digits.data
+    y = digits.target
+
+    X_train, X_test, y_train, y_test = train_test_split(X, y)
+    from sklearn.neighbors import KNeighborsClassifier
+    clf = KNeighborsClassifier()
+    t1 = time.time()
+    clf.fit(X_train, y_train)
+    score1 = clf.score(X_test, y_test)
+    t2 = time.time()
+    print(f"Directly get score: {score1} , elapsed: {t2-t1}")
+
+    pca = PCA(n_components=2)
+    pca.fit(X_train)
+    X_train_redu = pca.transform(X_train)
+    X_test_redu = pca.transform(X_test)
+
+    for i in range(10):
+        plt.scatter(X_train_redu[y_train==i, 0], X_train_redu[y_train==i,1])
+    plt.show()
+
+
+    clf = KNeighborsClassifier()
+    t1 = time.time()
+    clf.fit(X_train_redu, y_train)
+    score2 = clf.score(X_test_redu, y_test)
+    t2 = time.time()
+    print(f"Use PCA component=2 get score: {score2} , elapsed: {t2 - t1}")
+
+    pca = PCA(n_components=X_train.shape[1])
+    pca.fit(X_train)
+    plt.plot(
+        [i for i in range(len(pca.explained_variance_ratio_))],
+        [np.sum(pca.explained_variance_ratio_[:i+1]) for i in range(X_train.shape[1])]
+    )
+    plt.show()
+
+    pca = PCA(0.95)
+    pca.fit(X_train)
+    print(f"Component num for 0.95 PCA: {pca.n_components_}")
+    X_train_redu = pca.transform(X_train)
+    X_test_redu = pca.transform(X_test)
+    clf = KNeighborsClassifier()
+    t1 = time.time()
+    clf.fit(X_train_redu, y_train)
+    score2 = clf.score(X_test_redu, y_test)
+    t2 = time.time()
+    print(f"Use PCA component={pca.n_components_} get score: {score2} , elapsed: {t2 - t1}")
+
 if __name__ == '__main__':
-    test_my_pca()
+    test_sklearn_pca()
